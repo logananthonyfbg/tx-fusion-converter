@@ -178,9 +178,40 @@ def main():
                 except Exception as e:
                     st.error(f"Error processing file: {e}")
 
+    st.write("""
+        **Market Type Options:**
+        - MoneylineUpdates
+        - TotalsUpdates
+        - SpreadUpdates
+        - PlayerYesNoUpdates
+        - PlayerOverUnderUpdates
+        - PlayerNthUpdates
+        - PlayerOverUpdates
+        """)
+    
+    st.write("""
+        **Period Type Options:**
+        - Football
+            - Quarter
+            - Half
+            - Full
+        - Basketball 
+            - Quarter
+            - Half
+            - Full
+        - Baseball 
+            - Inning 
+            - AfterInning 
+            - Full
+        - Hockey 
+            - Period 
+            - Full
+        """)
+
+
 if __name__ == "__main__":
     main()
 
 
-#  cd Desktop\Projects\Python
+#  cd Desktop\Projects\Python\TXOddsConverter
 # streamlit run fusion_converter.py
