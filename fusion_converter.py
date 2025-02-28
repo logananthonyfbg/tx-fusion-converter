@@ -358,8 +358,6 @@ import streamlit as st
 import pandas as pd
 import os
 import json
-# import matplotlib.pyplot as plt
-# import seaborn as sns
 from datetime import datetime
 import pytz
 
@@ -464,9 +462,9 @@ def main():
                 market_types = ["Select Market Type"] + sorted(df["market_type"].dropna().unique().tolist())
                 bookmakers = ["Select Bookmaker"] + sorted(df["Bookmaker"].dropna().unique().tolist())
                 period_types = ["Select PeriodType"] + sorted(df["PeriodType"].dropna().astype(str).unique().tolist())
-                period_numbers = ["Select PeriodNumber"] + sorted(df["PeriodNumber"].dropna().astype(str).unique().tolist())
-                player_participants = ["Select PlayerParticipantId"] + sorted(df["PlayerParticipantId"].dropna().astype(str).unique().tolist())
-                lines = ["Select Line"] + sorted(df["Line"].dropna().astype(str).unique().tolist())
+                period_numbers = ["Select PeriodNumber"] + sorted(df["PeriodNumber"].dropna().unique().tolist())
+                player_participants = ["Select PlayerParticipantId"] + sorted(df["PlayerParticipantId"].dropna().unique().tolist())
+                lines = ["Select Line"] + sorted(df["Line"].dropna().unique().tolist())
 
                 # Create dropdowns for filters
                 market_type = st.selectbox("Market Type", options=market_types)
@@ -476,8 +474,8 @@ def main():
                 player_participant_id = st.selectbox("Player Participant ID", options=player_participants)
                 line = st.selectbox("Line", options=lines)
 
-                start_time = st.text_input("Start Time (HH:MM:SS)")
-                end_time = st.text_input("End Time (HH:MM:SS)")
+                start_time = st.text_input("Start Time (HH:MM:SS) - PST")
+                end_time = st.text_input("End Time (HH:MM:SS) - PST")
 
                 # Apply filters
                 filters = {}
