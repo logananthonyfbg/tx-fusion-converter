@@ -354,10 +354,357 @@
 ############################################################################################################################################################################################################################################################
 
 
+# import streamlit as st
+# import pandas as pd
+# import os
+# import json
+# from datetime import datetime
+# import pytz
+
+# def process_tx_json(file_path):
+#     """Processes a JSON file and converts it to a DataFrame."""
+#     with open(file_path, 'r') as file:
+#         data = file.readlines()
+
+#     processed_data = []
+
+#     for line in data:
+#         line = line.strip()
+#         if line and line.startswith('{') and line.endswith('}'):
+#             try:
+#                 json_data = json.loads(line)
+#             except json.JSONDecodeError as e:
+#                 print(f"Failed to decode JSON: {e}")
+#                 continue 
+
+#             common_data = {
+#                 "FixtureId": json_data["FixtureId"]["Id"],
+#                 "ClientId": json_data["FixtureId"]["ClientId"],
+#                 "IsOfferedInPlay": json_data["IsOfferedInPlay"],
+#             }
+
+#             market_types = {
+#                 "TotalsUpdates": ["Line", "OverPrice", "UnderPrice"],
+#                 "MoneylineUpdates": ["HomePrice", "AwayPrice"],
+#                 "SpreadUpdates": ["Line", "HomePrice", "AwayPrice"],
+#                 "PlayerYesNoUpdates": ["Line"],
+#                 "PlayerOverUnderUpdates": ["AggregateType", "PlayerParticipantId", "TeamParticipantId", "Line", "OverPrice", "UnderPrice"],
+#                 "PlayerNthUpdates": ["Line"],
+#                 "PlayerOverUpdates": ["Line"],
+#             }
+
+#             for market_type, fields in market_types.items():
+#                 if json_data.get(market_type):
+#                     for update in json_data[market_type]:
+#                         record = {**common_data, "market_type": market_type}
+#                         record.update({
+#                             "ReceiveTimestampUtc": update.get("ReceiveTimestampUtc"),
+#                             "Bookmaker": update.get("Bookmaker"),
+#                             "PeriodType": update.get("PeriodType"),
+#                             "PeriodNumber": update.get("PeriodNumber"),
+#                             "Type": update.get("Type"),
+#                             "PlayerParticipantId": update.get("PlayerParticipantId"),
+#                             "TeamParticipantId": update.get("TeamParticipantId"),
+#                         })
+#                         for field in fields:
+#                             record[field] = update.get(field)
+
+#                         processed_data.append(record)
+
+#     df = pd.DataFrame(processed_data)
+
+#     def convert_timezone(utc_time_str, timezone):
+#         if pd.isnull(utc_time_str):
+#             return None
+#         utc_time_str = utc_time_str.rstrip('Z')  
+#         utc_time = datetime.fromisoformat(utc_time_str)
+#         utc_time = pytz.utc.localize(utc_time)  
+#         return utc_time.astimezone(pytz.timezone(timezone))
+
+#     df['ReceiveTimestampEastern'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Eastern"))
+#     df['ReceiveTimestampCentral'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Central"))
+#     df['ReceiveTimestampPacific'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Pacific"))
+
+#     # Avoid division by zero errors
+#     df['HomeTrueProb'] = df.apply(lambda row: (1 / row['HomePrice']) if 'HomePrice' in row and row['HomePrice'] not in [0, None, ""] else None, axis=1)
+#     df['OverTrueProb'] = df.apply(lambda row: (1 / row['OverPrice']) if 'OverPrice' in row and row['OverPrice'] not in [0, None, ""] else None, axis=1)
+
+#     # Keep only specified columns
+#     columns_to_return = [
+#         'FixtureId', 'market_type', 'PeriodType', 'PeriodNumber', 'Bookmaker', 'Type', 'Line', 
+#         'PlayerParticipantId', 'TeamParticipantId', 'HomeTrueProb', 'OverTrueProb', 
+#         'ReceiveTimestampEastern', 'ReceiveTimestampCentral', 'ReceiveTimestampPacific'
+#     ]
+#     df = df[[col for col in columns_to_return if col in df.columns]]
+
+#     return df
+
+# def main():
+#     st.title("TXOdds Fusion Converter")
+#     st.write("Upload a JSON file and apply optional filters.")
+
+#     uploaded_file = st.file_uploader("Upload JSON file", type=["json"])
+
+#     if uploaded_file is not None:
+#         with st.spinner("Processing..."):
+#             try:
+#                 temp_path = "temp_uploaded.json"
+#                 with open(temp_path, "wb") as f:
+#                     f.write(uploaded_file.getbuffer())
+
+#                 df = process_tx_json(temp_path)
+
+#                 if df.empty:
+#                     st.warning("No data found in the uploaded file.")
+#                     return
+
+#                 # Extract unique values for dynamic dropdowns
+#                 market_types = ["Select Market Type"] + sorted(df["market_type"].dropna().unique().tolist())
+#                 bookmakers = ["Select Bookmaker"] + sorted(df["Bookmaker"].dropna().unique().tolist())
+#                 period_types = ["Select PeriodType"] + sorted(df["PeriodType"].dropna().astype(str).unique().tolist())
+#                 period_numbers = ["Select PeriodNumber"] + sorted(df["PeriodNumber"].dropna().unique().tolist())
+#                 player_participants = ["Select PlayerParticipantId"] + sorted(df["PlayerParticipantId"].dropna().unique().tolist())
+#                 lines = ["Select Line"] + sorted(df["Line"].dropna().unique().tolist())
+
+#                 # Create dropdowns for filters
+#                 market_type = st.selectbox("Market Type", options=market_types)
+#                 bookmaker = st.selectbox("Bookmaker", options=bookmakers)
+#                 period_type = st.selectbox("Period Type", options=period_types)
+#                 period_number = st.selectbox("Period Number", options=period_numbers)
+#                 player_participant_id = st.selectbox("Player Participant ID", options=player_participants)
+#                 line = st.selectbox("Line", options=lines)
+
+#                 start_time = st.text_input("Start Time (HH:MM:SS) - PST")
+#                 end_time = st.text_input("End Time (HH:MM:SS) - PST")
+
+#                 # Apply filters
+#                 filters = {}
+#                 if market_type != "Select Market Type":
+#                     filters["market_type"] = market_type
+#                 if bookmaker != "Select Bookmaker":
+#                     filters["Bookmaker"] = bookmaker
+#                 if period_type != "Select PeriodType":
+#                     filters["PeriodType"] = period_type
+#                 if period_number != "Select PeriodNumber":
+#                     filters["PeriodNumber"] = period_number
+#                 if player_participant_id != "Select PlayerParticipantId":
+#                     filters["PlayerParticipantId"] = player_participant_id
+#                 if line != "Select Line":
+#                     filters["Line"] = line
+
+#                 filtered_df = df.copy()
+#                 for column, value in filters.items():
+#                     if column in filtered_df.columns:
+#                         filtered_df = filtered_df[filtered_df[column] == value]
+
+#                 st.write("### Processed Data Preview:")
+#                 st.dataframe(filtered_df)
+
+#                 csv = filtered_df.to_csv(index=False).encode('utf-8')
+#                 st.download_button(
+#                     label="Download CSV",
+#                     data=csv,
+#                     file_name="processed_betting_data.csv",
+#                     mime="text/csv"
+#                 )
+
+#             except Exception as e:
+#                 st.error(f"Error processing file: {e}")
+
+# if __name__ == "__main__":
+#     main()
+
+
+############################################################################################################################################################################################################################################################
+
+
+# import streamlit as st
+# import pandas as pd
+# import os
+# import json
+# import seaborn as sns
+# import matplotlib.pyplot as plt
+# from datetime import datetime
+# import pytz
+
+# def process_tx_json(file_path):
+#     """Processes a JSON file and converts it to a DataFrame."""
+#     with open(file_path, 'r') as file:
+#         data = file.readlines()
+
+#     processed_data = []
+
+#     for line in data:
+#         line = line.strip()
+#         if line and line.startswith('{') and line.endswith('}'):
+#             try:
+#                 json_data = json.loads(line)
+#             except json.JSONDecodeError as e:
+#                 print(f"Failed to decode JSON: {e}")
+#                 continue 
+
+#             common_data = {
+#                 "FixtureId": json_data["FixtureId"]["Id"],
+#                 "ClientId": json_data["FixtureId"]["ClientId"],
+#                 "IsOfferedInPlay": json_data["IsOfferedInPlay"],
+#             }
+
+#             market_types = {
+#                 "TotalsUpdates": ["Line", "OverPrice", "UnderPrice"],
+#                 "MoneylineUpdates": ["HomePrice", "AwayPrice"],
+#                 "SpreadUpdates": ["Line", "HomePrice", "AwayPrice"],
+#                 "PlayerYesNoUpdates": ["Line"],
+#                 "PlayerOverUnderUpdates": ["AggregateType", "PlayerParticipantId", "TeamParticipantId", "Line", "OverPrice", "UnderPrice"],
+#                 "PlayerNthUpdates": ["Line"],
+#                 "PlayerOverUpdates": ["Line"],
+#             }
+
+#             for market_type, fields in market_types.items():
+#                 if json_data.get(market_type):
+#                     for update in json_data[market_type]:
+#                         record = {**common_data, "market_type": market_type}
+#                         record.update({
+#                             "ReceiveTimestampUtc": update.get("ReceiveTimestampUtc"),
+#                             "Bookmaker": update.get("Bookmaker"),
+#                             "PeriodType": update.get("PeriodType"),
+#                             "PeriodNumber": update.get("PeriodNumber"),
+#                             "Type": update.get("Type"),
+#                             "PlayerParticipantId": update.get("PlayerParticipantId"),
+#                             "TeamParticipantId": update.get("TeamParticipantId"),
+#                         })
+#                         for field in fields:
+#                             record[field] = update.get(field)
+
+#                         processed_data.append(record)
+
+#     df = pd.DataFrame(processed_data)
+
+#     def convert_timezone(utc_time_str, timezone):
+#         if pd.isnull(utc_time_str):
+#             return None
+#         utc_time_str = utc_time_str.rstrip('Z')  
+#         utc_time = datetime.fromisoformat(utc_time_str)
+#         utc_time = pytz.utc.localize(utc_time)  
+#         return utc_time.astimezone(pytz.timezone(timezone))
+
+#     df['ReceiveTimestampEastern'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Eastern"))
+#     df['ReceiveTimestampCentral'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Central"))
+#     df['ReceiveTimestampPacific'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Pacific"))
+
+#     # Avoid division by zero errors
+#     df['HomeTrueProb'] = df.apply(lambda row: (1 / row['HomePrice']) if 'HomePrice' in row and row['HomePrice'] not in [0, None, ""] else None, axis=1)
+#     df['OverTrueProb'] = df.apply(lambda row: (1 / row['OverPrice']) if 'OverPrice' in row and row['OverPrice'] not in [0, None, ""] else None, axis=1)
+
+#     # Keep only specified columns
+#     columns_to_return = [
+#         'FixtureId', 'market_type', 'PeriodType', 'PeriodNumber', 'Bookmaker', 'Type', 'Line', 
+#         'PlayerParticipantId', 'TeamParticipantId', 'HomeTrueProb', 'OverTrueProb', 
+#         'ReceiveTimestampEastern', 'ReceiveTimestampCentral', 'ReceiveTimestampPacific'
+#     ]
+#     df = df[[col for col in columns_to_return if col in df.columns]]
+
+#     return df
+
+# def main():
+#     st.title("TXOdds Fusion Converter")
+#     st.write("Upload a JSON file and apply optional filters.")
+
+#     uploaded_file = st.file_uploader("Upload JSON file", type=["json"])
+
+#     if uploaded_file is not None:
+#         with st.spinner("Processing..."):
+#             try:
+#                 temp_path = "temp_uploaded.json"
+#                 with open(temp_path, "wb") as f:
+#                     f.write(uploaded_file.getbuffer())
+
+#                 df = process_tx_json(temp_path)
+
+#                 if df.empty:
+#                     st.warning("No data found in the uploaded file.")
+#                     return
+
+#                 # Extract unique values for dynamic dropdowns
+#                 market_types = ["Select Market Type"] + sorted(df["market_type"].dropna().unique().tolist())
+#                 bookmakers = ["Select Bookmaker"] + sorted(df["Bookmaker"].dropna().unique().tolist())
+#                 period_types = ["Select PeriodType"] + sorted(df["PeriodType"].dropna().astype(str).unique().tolist())
+#                 period_numbers = ["Select PeriodNumber"] + sorted(df["PeriodNumber"].dropna().unique().tolist())
+#                 player_participants = ["Select PlayerParticipantId"] + sorted(df["PlayerParticipantId"].dropna().unique().tolist())
+#                 lines = ["Select Line"] + sorted(df["Line"].dropna().unique().tolist())
+
+#                 # Create dropdowns for filters
+#                 market_type = st.selectbox("Market Type", options=market_types)
+#                 bookmaker = st.selectbox("Bookmaker", options=bookmakers)
+#                 period_type = st.selectbox("Period Type", options=period_types)
+#                 period_number = st.selectbox("Period Number", options=period_numbers)
+#                 player_participant_id = st.selectbox("Player Participant ID", options=player_participants)
+#                 line = st.selectbox("Line", options=lines)
+
+#                 # Apply filters
+#                 filters = {}
+#                 if market_type != "Select Market Type":
+#                     filters["market_type"] = market_type
+#                 if bookmaker != "Select Bookmaker":
+#                     filters["Bookmaker"] = bookmaker
+#                 if period_type != "Select PeriodType":
+#                     filters["PeriodType"] = period_type
+#                 if period_number != "Select PeriodNumber":
+#                     filters["PeriodNumber"] = period_number
+#                 if player_participant_id != "Select PlayerParticipantId":
+#                     filters["PlayerParticipantId"] = player_participant_id
+#                 if line != "Select Line":
+#                     filters["Line"] = line
+
+#                 filtered_df = df.copy()
+#                 for column, value in filters.items():
+#                     if column in filtered_df.columns:
+#                         filtered_df = filtered_df[filtered_df[column] == value]
+
+#                 st.write("### Processed Data Preview:")
+#                 st.dataframe(filtered_df)
+
+#                 # Check if conditions for graph are met
+#                 make_graph = (
+#                     (market_type == "MoneylineUpdates" and period_type != "Select PeriodType") or
+#                     (market_type in ["TotalsUpdates", "SpreadUpdates"] and line != "Select Line" and period_type != "Select PeriodType" and period_number != "Select PeriodNumber") or
+#                     (market_type in ["PlayerYesNoUpdates", "PlayerOverUnderUpdates", "PlayerNthUpdates", "PlayerOverUpdates"] and player_participant_id != "Select PlayerParticipantId" and line != "Select Line")
+#                 )
+
+#                 if make_graph and not filtered_df.empty:
+#                     plt.figure(figsize=(10, 6))
+#                     y_axis = "HomeTrueProb" if market_type == "MoneylineUpdates" else "OverTrueProb"
+
+#                     sns.scatterplot(
+#                         data=filtered_df,
+#                         x="ReceiveTimestampPacific",
+#                         y=y_axis,
+#                         hue="Bookmaker"
+#                     )
+
+#                     plt.xticks(rotation=45)
+#                     plt.title(f"{market_type} Scatterplot")
+#                     plt.xlabel("Receive Timestamp (Pacific)")
+#                     plt.ylabel(y_axis)
+#                     st.pyplot(plt)
+
+#                 csv = filtered_df.to_csv(index=False).encode('utf-8')
+#                 st.download_button("Download CSV", csv, "processed_betting_data.csv", "text/csv")
+
+#             except Exception as e:
+#                 st.error(f"Error processing file: {e}")
+
+# if __name__ == "__main__":
+#     main()
+
+
+############################################################################################################################################################################################################################################################
+
 import streamlit as st
 import pandas as pd
 import os
 import json
+import seaborn as sns
+import matplotlib.pyplot as plt
 from datetime import datetime
 import pytz
 
@@ -474,23 +821,12 @@ def main():
                 player_participant_id = st.selectbox("Player Participant ID", options=player_participants)
                 line = st.selectbox("Line", options=lines)
 
-                start_time = st.text_input("Start Time (HH:MM:SS) - PST")
-                end_time = st.text_input("End Time (HH:MM:SS) - PST")
-
                 # Apply filters
                 filters = {}
-                if market_type != "Select Market Type":
-                    filters["market_type"] = market_type
-                if bookmaker != "Select Bookmaker":
-                    filters["Bookmaker"] = bookmaker
-                if period_type != "Select PeriodType":
-                    filters["PeriodType"] = period_type
-                if period_number != "Select PeriodNumber":
-                    filters["PeriodNumber"] = period_number
-                if player_participant_id != "Select PlayerParticipantId":
-                    filters["PlayerParticipantId"] = player_participant_id
-                if line != "Select Line":
-                    filters["Line"] = line
+                for col, value in [("market_type", market_type), ("Bookmaker", bookmaker), ("PeriodType", period_type),
+                                   ("PeriodNumber", period_number), ("PlayerParticipantId", player_participant_id), ("Line", line)]:
+                    if value != f"Select {col.replace('_', ' ')}":
+                        filters[col] = value
 
                 filtered_df = df.copy()
                 for column, value in filters.items():
@@ -500,13 +836,39 @@ def main():
                 st.write("### Processed Data Preview:")
                 st.dataframe(filtered_df)
 
-                csv = filtered_df.to_csv(index=False).encode('utf-8')
-                st.download_button(
-                    label="Download CSV",
-                    data=csv,
-                    file_name="processed_betting_data.csv",
-                    mime="text/csv"
+                # Graph Conditions
+                make_graph = (
+                    (market_type == "MoneylineUpdates" and period_type != "Select PeriodType") or
+                    (market_type in ["TotalsUpdates", "SpreadUpdates"] and line != "Select Line" and period_type != "Select PeriodType" and period_number != "Select PeriodNumber") or
+                    (market_type in ["PlayerYesNoUpdates", "PlayerOverUnderUpdates", "PlayerNthUpdates", "PlayerOverUpdates"] and player_participant_id != "Select PlayerParticipantId" and line != "Select Line")
                 )
+
+                if make_graph and not filtered_df.empty:
+                    y_axis = "HomeTrueProb" if market_type == "MoneylineUpdates" else "OverTrueProb"
+
+                    # Generate dynamic title (excluding unselected filters)
+                    title_parts = [market_type] + [
+                        f"{label}: {value}" for label, value in [
+                            ("Line", line), ("Period Type", period_type), ("Period Number", period_number),
+                            ("Player ID", player_participant_id), ("Bookmaker", bookmaker)
+                        ] if value and value not in ["Select Line", "Select PeriodType", "Select PeriodNumber", "Select PlayerParticipantId", "Select Bookmaker"]
+                    ]
+
+                    title = " | ".join(title_parts)
+                    fixture_id = filtered_df["FixtureId"].iloc[0] if "FixtureId" in filtered_df.columns else "Unknown Fixture"
+
+                    plt.figure(figsize=(10, 6))
+                    sns.scatterplot(data=filtered_df, x="ReceiveTimestampPacific", y=y_axis, hue="Bookmaker")
+                    plt.xticks(rotation=45)
+                    plt.suptitle(title, fontsize=14, fontweight='bold')
+                    plt.title(f"Fixture ID: {fixture_id}", fontsize=10)
+                    plt.xlabel("Timestamp (Pacific Time)")
+                    plt.ylabel("%")
+                    plt.gca().yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x * 100:.0f}%'))
+                    st.pyplot(plt)
+                    
+                csv = filtered_df.to_csv(index=False).encode('utf-8')
+                st.download_button("Download CSV", csv, "processed_betting_data.csv", "text/csv")
 
             except Exception as e:
                 st.error(f"Error processing file: {e}")
