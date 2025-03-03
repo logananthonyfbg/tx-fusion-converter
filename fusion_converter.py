@@ -97,15 +97,17 @@ def main():
     st.markdown("""
     ### How to Use:
     1. **Download a TXOdds Fusion JSON file**  
-    - The file should follow this format:  
-        **all-archive-production-3055810275-Feeds.TxOdds.Fusion.CollegeBasketball.InPlay.Events**  
-    - If the file name is different, it is NOT the correct file.  
+        - The file should follow this format:  
+            **all-archive-production-3055810275-Feeds.TxOdds.Fusion.CollegeBasketball.InPlay.Events**  
+        - If the file name is different, it is NOT the correct file.  
     
     2. **Upload the JSON file below.**
 
-    3. **Apply filters** (optional)  
-    - Select relevant **markets, players, lines, etc.** to refine the data/graph.  
-    """)
+    3. **Apply filters** 
+        - Select relevant **markets, players, lines, etc.** to refine the data/graph.  
+                
+    Note: See this confluence page for more information on which Bookmakers we use for which sport [here](https://betfanatics.atlassian.net/wiki/spaces/RT/pages/821265926/Model+Market+Inputs)
+    """) 
 
     uploaded_file = st.file_uploader("Upload JSON file", type=["json"])
 
