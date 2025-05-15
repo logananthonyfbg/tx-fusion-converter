@@ -198,7 +198,11 @@ def main():
                     )
 
                     if make_graph:
-                        y_axis = "HomeTrueProb" if market_type == "MoneylineUpdates" else "OverTrueProb"
+                        if market_type in ["MoneylineUpdates", "SpreadUpdates"]:
+                            y_axis = "HomeTrueProb"
+                        else:
+                            y_axis = "OverTrueProb"
+
 
                         # Generate dynamic title (excluding unselected filters)
                         title_parts = [market_type] + [
