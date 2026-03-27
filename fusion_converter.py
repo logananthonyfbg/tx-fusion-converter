@@ -66,7 +66,7 @@ def process_tx_json(file_path):
         utc_time_str = utc_time_str.rstrip('Z')  
         utc_time = datetime.fromisoformat(utc_time_str)
         utc_time = pytz.utc.localize(utc_time)  
-        return utc_time.astimezone(pytz.timezone(timezone))
+        return utc_time.astimezone(pytz.timezone(timezone)).replace(tzinfo=None)
 
     df['ReceiveTimestampEastern'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Eastern"))
     df['ReceiveTimestampCentral'] = df['ReceiveTimestampUtc'].apply(lambda x: convert_timezone(x, "US/Central"))
